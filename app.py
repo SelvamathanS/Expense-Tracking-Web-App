@@ -2,9 +2,11 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 import psycopg2
 import os
 import time
+import math
 from datetime import datetime
 from urllib.parse import urlparse
 from psycopg2 import IntegrityError
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = '3a6094cbe292ff1717ec6e11401673a8b8641daf2dd8821a2fab945f8ba49906'
@@ -44,11 +46,13 @@ def execute_query(query, params=None, fetch=False):
         cur.execute(query, params or ())
         if fetch:
             result = cur.fetchall()
+            conn.commit()
             return result
         conn.commit()
     except Exception as e:
         if conn:
             conn.rollback()
+        print(f"Database Error: {e}")
         raise e
     finally:
         if cur:
@@ -63,7 +67,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS users (
                 user_id SERIAL PRIMARY KEY,
                 username VARCHAR(80) UNIQUE NOT NULL,
-                password VARCHAR(200) NOT NULL
+                password VARCHAR(255) NOT NULL
             )
         """)
         
@@ -72,9 +76,9 @@ def init_db():
                 transaction_id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
                 date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                amount FLOAT NOT NULL,
+                amount DOUBLE PRECISION NOT NULL,
                 type VARCHAR(10) NOT NULL,
-                income FLOAT,
+                income VARCHAR(100),
                 reason VARCHAR(100)
             )
         """)
@@ -97,7 +101,7 @@ def test_db():
 @app.route('/')
 def home():
     if 'user_id' not in session:
-        return render_template('index.html')
+        return render_template('index.html', balance=0, transactions=[])
     
     try:
         user = execute_query(
@@ -105,6 +109,17 @@ def home():
             (session['user_id'],),
             fetch=True
         )
+        
+        # Calculate Available Balance (Total Income - Total Expense)
+        balance_data = execute_query(
+            """SELECT 
+                SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) - 
+                SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END)
+               FROM transactions WHERE user_id = %s""",
+            (session['user_id'],),
+            fetch=True
+        )
+        available_balance = balance_data[0][0] if balance_data[0][0] else 0.0
         
         transactions = execute_query(
             """SELECT date, amount, type, income, reason 
@@ -115,19 +130,32 @@ def home():
             (session['user_id'],),
             fetch=True
         )
-        
+        def format_date_pretty(date):
+            if not date: return "N/A"
+            now = datetime.now()
+            diff = now - date
+            
+            if diff.days == 0:
+                if diff.seconds < 60: return "Just now"
+                if diff.seconds < 3600: return f"{math.floor(diff.seconds / 60)}m ago"
+                return f"{math.floor(diff.seconds / 3600)}h ago"
+            if diff.days == 1: return "Yesterday"
+            if diff.days < 7: return f"{diff.days} days ago"
+            return date.strftime('%b %d, %Y')
         if user:
             return render_template('index.html', 
                                 transactions=transactions,
                                 username=user[0][0],
-                                datetime=datetime)  # Pass datetime to template
+                                balance=available_balance,
+                                format_date=format_date_pretty,
+                                datetime=datetime)
         else:
             return render_template('index.html', transactions=[])
             
     except Exception as e:
-        flash('Error loading recent transactions', 'error')
-        return render_template('index.html', transactions=[])
-        
+        flash('Error loading dashboard', 'error')
+        return render_template('index.html', balance=0, transactions=[])
+      
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -141,11 +169,23 @@ def login():
                 fetch=True
             )
             
-            if user and user[0][2] == password:
-                session['user_id'] = user[0][0]
-                session['username'] = user[0][1]  # Store username
-                session['username_initial'] = user[0][1][0].upper()  # First letter
-                return redirect(url_for('home'))
+            if user:
+                user_id = user[0][0]
+                stored_password = user[0][2]
+                is_valid = False
+                if stored_password.startswith(('pbkdf2:sha256', 'scrypt', 'argon2')):
+                    if check_password_hash(stored_password, password):
+                        is_valid = True
+                else:
+                    if stored_password == password:
+                        is_valid = True
+                        # new_hash = generate_password_hash(password, method='pbkdf2:sha256')
+                        # execute_query("UPDATE users SET password = %s WHERE user_id = %s", (new_hash, user_id))
+                if is_valid:
+                    session['user_id'] = user[0][0]
+                    session['username'] = user[0][1]
+                    session['username_initial'] = user[0][1][0].upper()
+                    return redirect(url_for('home'))
             
             flash('Invalid username or password', 'error')
         except Exception as e:
@@ -157,24 +197,36 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
+        username = request.form.get('username').strip()
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if password != confirm_password:
+            flash('Passwords do not match!', 'error')
+            return render_template('register.html')
+        hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
         try:
             result = execute_query(
-                "INSERT INTO users (username, password) VALUES (%s, %s) RETURNING user_id, username",
-                (username, password),
+                "INSERT INTO users (username, password) VALUES (%s, %s) ON CONFLICT (username) DO NOTHING RETURNING user_id, username",
+                (username, hashed_pw),
                 fetch=True
             )
-            session['user_id'] = result[0][0]
-            session['username'] = result[0][1]  # Store username
-            session['username_initial'] = result[0][1][0].upper()  # First letter
-            flash('Registration successful!', 'success')
-            return redirect(url_for('home'))
-        except IntegrityError:
-            flash('Username already exists', 'error')
+            print(f"DEBUG: Inserted user successfully. Result: {result}")
+            if result:
+                user_id, saved_username = result[0]
+                session.clear()
+                session['user_id'] = user_id
+                session['username'] = saved_username
+                session['username_initial'] = saved_username[0].upper()
+                
+                print(f"✅ SUCCESS: User {saved_username} saved to Neon.")
+                flash('Registration successful!', 'success')
+                return redirect(url_for('home'))
+            else:
+                flash('Username already exists. Please choose another.', 'error')
         except Exception as e:
-            flash(f'Registration error: {str(e)}', 'error')
+            print(f"❌ REGISTRATION FAILURE: {e}")
+            flash('A database error occurred. Please try again.', 'error')
     
     return render_template('register.html')
 
@@ -206,7 +258,7 @@ def add_transaction():
         # Handle income-specific fields
         income_source = None
         if transaction_type == 'income':
-            income_source = request.form.get('income', '').strip()
+            income_source = request.form.get('custom_income') or request.form.get('income', '').strip()
             if not income_source:
                 flash('Income source is required for income transactions', 'error')
                 return redirect(url_for('show_transactions'))
@@ -338,7 +390,10 @@ def check_session():
         'user_id': session.get('user_id'),
         'session': dict(session)
     }
-
+@app.route('/debug-users')
+def debug_users():
+    users = execute_query("SELECT * FROM users", fetch=True)
+    return str(users)
 @app.route('/health')
 def health_check():
     try:

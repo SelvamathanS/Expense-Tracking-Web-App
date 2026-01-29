@@ -1,277 +1,227 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
+    /* --- Robust Theme-Aware Color Variables --- */
+    :root {
+        --panel-bg: rgba(255, 255, 255, 0.8);
+        --table-row-bg: #ffffff;
+        --table-row-hover: #f8fafc;
+        --text-heading: #1e293b;
+        --text-body: #475569;
+        --input-bg: rgba(255, 255, 255, 0.9);
+        --border-color: rgba(0, 0, 0, 0.05);
+    }
+
+    [data-theme='dark'] {
+        --panel-bg: rgba(30, 41, 59, 0.7);
+        --table-row-bg: rgba(51, 65, 85, 0.5);
+        --table-row-hover: rgba(71, 85, 105, 0.6);
+        --text-heading: #f8fafc;
+        --text-body: #cbd5e1;
+        --input-bg: rgba(15, 23, 42, 0.6);
+        --border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* --- Animations --- */
+    @keyframes slideInUp {
+        from { opacity: 0; transform: translateY(30px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    
-    .transactions-container {
-        animation: fadeIn 0.6s ease-out;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
+    @keyframes rowSlide {
+        from { opacity: 0; transform: translateX(-10px); }
+        to { opacity: 1; transform: translateX(0); }
     }
-    
-    .section-container {
-        background: white;
+    .animate-main { animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* --- UI Components --- */
+    .glass-panel {
+        background: var(--panel-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
+        border-radius: 24px;
         padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         margin-bottom: 2rem;
+        transition: all 0.3s ease;
     }
-    
-    .income-highlight {
-        background-color: rgba(16, 185, 129, 0.1);
-        border-left: 4px solid #10b981;
+
+    .modern-input {
+        background: var(--input-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 14px;
+        padding: 0.75rem 1rem;
+        color: var(--text-heading);
+        transition: all 0.3s ease;
     }
-    
-    .income-amount {
-        font-size: 1.1rem;
-        position: relative;
-    }
-    
-    .income-amount::before {
-        content: "+";
-        position: absolute;
-        left: -15px;
-    }
-    
-    .transaction-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        margin-top: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    
-    .transaction-table th {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1rem;
-        text-align: left;
-        font-weight: 500;
-    }
-    
-    .transaction-table td {
-        padding: 1rem;
-        border-bottom: 1px solid #f0f0f0;
-        transition: background 0.3s ease;
-    }
-    
-    .transaction-table tr:last-child td {
-        border-bottom: none;
-    }
-    
-    .transaction-table tr:hover td {
-        background: #f9f9f9;
-    }
-    
-    .text-green {
-        color: #10b981;
-        font-weight: 600;
-    }
-    
-    .text-red {
-        color: #ef4444;
-        font-weight: 600;
-    }
-    
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        font-weight: 500;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .btn-danger {
-        background-color: #fee2e2;
-        color: #b91c1c;
-    }
-    
-    .btn-danger:hover {
-        background-color: #fecaca;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    }
-    
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-    
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: #4b5563;
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        transition: border 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .form-control:focus {
+    .modern-input:focus {
         border-color: #6366f1;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
         outline: none;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
     }
-    
-    .submit-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 0.75rem 1.5rem;
-        border: none;
-        border-radius: 8px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: transform 0.3s ease;
+
+    /* --- Redesigned Table --- */
+    .table-container {
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+    .custom-table {
         width: 100%;
+        border-collapse: collapse;
+        background: transparent;
     }
-    
-    .submit-btn:hover {
-        transform: translateY(-2px);
+    .custom-table th {
+        background: var(--panel-bg);
+        padding: 1.25rem 1.5rem;
+        text-align: left;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-body);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid var(--border-color);
     }
-    
-    .category-badge {
-        display: inline-block;
-        padding: 0.25rem 0.5rem;
-        border-radius: 9999px;
+    .custom-table tr td {
+        padding: 1.25rem 1.5rem;
+        background: var(--table-row-bg);
+        color: var(--text-heading);
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.2s ease;
+    }
+    .custom-table tr:last-child td { border-bottom: none; }
+    .custom-table tr:hover td {
+        background: var(--table-row-hover);
+    }
+
+    .badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 10px;
         font-size: 0.75rem;
-        font-weight: 600;
-        background-color: #d1fae5;
-        color: #065f46;
+        font-weight: 800;
+        display: inline-block;
     }
-    
-    .section-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e5e7eb;
+    .badge-income { background: #dcfce7; color: #15803d; }
+    .badge-expense { background: #fee2e2; color: #b91c1c; }
+
+    .search-wrapper {
+        position: relative;
+        flex: 1;
     }
-    
-    .navigation-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-    }
-    
-    @media (max-width: 768px) {
-        .section-container {
-            padding: 1.5rem;
-        }
-        
-        .section-title {
-            font-size: 1.3rem;
-        }
+    .search-icon {
+        position: absolute;
+        right: 1.25rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-body);
+        pointer-events: none;
     }
 </style>
 
-<div class="transactions-container">
-    <div class="navigation-header">
-        <h1 class="text-3xl font-bold text-gray-800">Your Transactions</h1>
-        <a href="{{ url_for('home') }}" class="btn bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-lg">
-            ← Back to Dashboard
+<div class="max-w-6xl mx-auto py-8 px-4 animate-main">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div>
+            <h1 class="text-4xl font-black tracking-tight" style="color: var(--text-heading);">Financial Records</h1>
+            <p style="color: var(--text-body);">Manage and monitor your transaction history.</p>
+        </div>
+        <a href="{{ url_for('home') }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg hover:bg-indigo-700 transition-all transform hover:-translate-y-1">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Back to Dashboard
         </a>
     </div>
 
-    <!-- Add Transaction Form Section (Now First) -->
-    <div class="section-container">
-        <h2 class="section-title">Add New Transaction</h2>
-        <form method="POST" action="{{ url_for('add_transaction') }}" class="space-y-4">
-            <div class="form-group">
-                <label>Transaction Type*</label>
-                <select name="type" id="type-selector" class="form-control" required>
-                    <option value="" disabled selected>Select type</option>
-                    <option value="expense">Expense</option>
-                    <option value="income">Income</option>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="glass-panel !mb-0 !p-6 flex items-center space-x-4">
+            <div class="p-3 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 rounded-2xl text-2xl">📊</div>
+            <div>
+                <p class="text-xs font-bold uppercase" style="color: var(--text-body);">Total Count</p>
+                <p class="text-2xl font-black" style="color: var(--text-heading);">{{ transactions|length }}</p>
+            </div>
+        </div>
+        <div class="md:col-span-2 glass-panel !mb-0 !p-6 flex items-center">
+            <div class="search-wrapper">
+                <input type="text" id="transactionSearch" placeholder="Filter by notes, category, or amount..." class="modern-input w-full pr-12">
+                <div class="search-icon">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"/></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-panel">
+        <h2 class="text-xl font-bold mb-6 flex items-center" style="color: var(--text-heading);">
+            <span class="mr-2">➕</span> New Entry
+        </h2>
+        <form method="POST" action="{{ url_for('add_transaction') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold ml-1" style="color: var(--text-body);">Transaction Type</label>
+                <select name="type" id="type-selector" class="modern-input" required>
+                    <option value="expense">Expense 💸</option>
+                    <option value="income">Income 💰</option>
                 </select>
             </div>
 
-            <div class="form-group">
-                <label>Amount*</label>
-                <input type="number" step="0.01" name="amount" class="form-control" 
-                       placeholder="0.00" min="0.01" required>
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold ml-1" style="color: var(--text-body);">Amount ($)</label>
+                <input type="number" step="0.01" name="amount" class="modern-input" placeholder="0.00" required>
             </div>
 
-            <div class="form-group hidden" id="income-field">
-                <label>Income Category</label>
-                <select name="income" class="form-control">
+            <div class="flex flex-col gap-2 hidden" id="income-field">
+                <label class="text-sm font-bold ml-1" style="color: var(--text-body);">Category</label>
+                <select name="income" id="income-cat" class="modern-input">
                     <option value="Salary">Salary</option>
                     <option value="Bonus">Bonus</option>
-                    <option value="Investment">Investment</option>
-                    <option value="Freelance">Freelance</option>
                     <option value="Gift">Gift</option>
                     <option value="Other">Other</option>
                 </select>
             </div>
 
-            <div class="form-group">
-                <label>Notes (Optional)</label>
-                <textarea name="reason" class="form-control" rows="2" 
-                          placeholder="Additional details about this transaction"></textarea>
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold ml-1" style="color: var(--text-body);">Description</label>
+                <input type="text" name="reason" class="modern-input" placeholder="What was this for?">
             </div>
 
-            <button type="submit" class="submit-btn">
-                Add Transaction
-            </button>
+            <div id="custom-income-wrapper" class="lg:col-span-4 hidden mt-2">
+                <input type="text" name="custom_income" id="custom-income-input" class="modern-input w-full" placeholder="Specify custom income source...">
+            </div>
+
+            <div class="lg:col-span-4 mt-2">
+                <button type="submit" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-500/20 transition-all">
+                    Save Transaction
+                </button>
+            </div>
         </form>
     </div>
 
-    <!-- Transactions List Section -->
-    <div class="section-container">
-        <h2 class="section-title">Transaction History</h2>
-        
+    <div class="table-container shadow-2xl">
         {% if transactions %}
-        <table class="transaction-table">
+        <table class="custom-table" id="transactionTable">
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>Details</th>
-                    <th>Actions</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th class="text-right">Amount</th>
+                    <th class="text-center">Action</th>
                 </tr>
             </thead>
             <tbody>
                 {% for t in transactions %}
-                <tr class="{% if t[3] == 'income' %}income-highlight{% endif %}">
-                    <td>{{ t[2].strftime('%Y-%m-%d %H:%M') if t[2] else 'N/A' }}</td>
-                    <td>{{ t[3]|capitalize }}</td>
-                    <td class="{{ 'income-amount text-green' if t[3] == 'income' else 'text-red' }}">
-                        ${{ "%.2f"|format(t[1]) }}
-                    </td>
+                <tr class="transaction-row" style="animation: rowSlide 0.4s ease forwards; animation-delay: {{ loop.index0 * 0.03 }}s">
+                    <td class="text-sm font-medium">{{ t[2].strftime('%b %d, %Y') if t[2] else 'N/A' }}</td>
                     <td>
-                        {% if t[3] == 'income' %}
-                            <span class="category-badge">{{ t[4] if t[4] else 'Uncategorized' }}</span>
-                        {% else %}
-                            {{ t[5] if t[5] else 'Not specified' }}
-                        {% endif %}
+                        <span class="badge {{ 'badge-income' if t[3] == 'income' else 'badge-expense' }}">
+                            {{ t[4] if t[3] == 'income' else 'General' }}
+                        </span>
                     </td>
-                    <td>
+                    <td class="font-semibold">{{ t[5] if t[5] else 'No Notes' }}</td>
+                    <td class="text-right font-black text-lg {{ 'text-green-500' if t[3] == 'income' else '' }}">
+                        {{ '+' if t[3] == 'income' else '-' }}${{ "%.2f"|format(t[1]) }}
+                    </td>
+                    <td class="text-center">
                         <a href="{{ url_for('delete_transaction', transaction_id=t[0]) }}" 
-                           onclick="return confirm('Are you sure you want to delete this transaction?')"
-                           class="btn-danger inline-flex items-center px-3 py-1.5 text-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Delete
+                           onclick="return confirm('Confirm deletion?')"
+                           class="inline-flex p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round"/></svg>
                         </a>
                     </td>
                 </tr>
@@ -279,23 +229,51 @@
             </tbody>
         </table>
         {% else %}
-        <div class="empty-state">
-            <p class="text-xl font-medium text-gray-700">💔 No transactions found 💔</p>
-            <p class="text-gray-500">Add your first transaction above</p>
+        <div class="glass-panel text-center py-16 !mb-0">
+            <div class="text-5xl mb-4">📂</div>
+            <h3 class="text-xl font-bold" style="color: var(--text-heading);">No Records Found</h3>
+            <p style="color: var(--text-body);">Start by adding your first transaction above.</p>
         </div>
         {% endif %}
     </div>
 </div>
 
 <script>
+    // 1. Fixed Search Functionality
+    document.getElementById('transactionSearch').addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#transactionTable tbody tr');
+        
+        rows.forEach(row => {
+            // Get text from Category, Notes, and Amount columns
+            const category = row.cells[1].textContent.toLowerCase();
+            const notes = row.cells[2].textContent.toLowerCase();
+            const amount = row.cells[3].textContent.toLowerCase();
+            
+            if (category.includes(query) || notes.includes(query) || amount.includes(query)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    });
+
+    // 2. UI Logic - Toggle Income Fields
     document.getElementById('type-selector').addEventListener('change', function() {
         const incomeField = document.getElementById('income-field');
+        const customWrapper = document.getElementById('custom-income-wrapper');
         if (this.value === 'income') {
             incomeField.classList.remove('hidden');
         } else {
             incomeField.classList.add('hidden');
+            customWrapper.classList.add('hidden');
         }
+    });
+
+    // 3. UI Logic - Custom Income Toggle
+    document.getElementById('income-cat').addEventListener('change', function() {
+        const customInput = document.getElementById('custom-income-wrapper');
+        customInput.classList.toggle('hidden', this.value !== 'Other');
     });
 </script>
 {% endblock %}
-

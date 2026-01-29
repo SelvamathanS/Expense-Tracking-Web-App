@@ -1,258 +1,272 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Family Finance Tracker</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💸</text></svg>">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            200: '#bae6fd',
-                            300: '#7dd3fc',
-                            400: '#38bdf8',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            800: '#075985',
-                            900: '#0c4a6e',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    
     <style>
+        :root {
+            --bg-body: #f8fafc;
+            --text-main: #1f2937;    /* Deep gray/black */
+            --text-muted: #6b7280;   /* Medium gray */
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --nav-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+            --accent: #6366f1;
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #0f172a;
+            --text-main: #f9fafb;    /* Near white */
+            --text-muted: #9ca3af;   /* Light gray */
+            --glass-bg: rgba(17, 24, 39, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --nav-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            --accent: #818cf8;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            min-height: 100vh;
+            margin: 0;
         }
-        
-        nav {
-            background: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            padding: 0.75rem 1rem;
-            position: sticky;
-            top: 0;
-            z-index: 50;
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--nav-shadow);
         }
-        
-        nav a {
-            color: #64748b;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 0.25rem 0.5rem;
-            margin-right: 0.25rem;
-            border-radius: 0.375rem;
-            transition: all 0.2s ease;
+
+        /* --- CUSTOM DAY/NIGHT TOGGLE CSS --- */
+        .theme-switch {
             position: relative;
-            font-size: 0.875rem;
+            width: 60px;
+            height: 30px;
+            border-radius: 20px;
+            background-color: #1a1a2e;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.5s ease;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.4);
+            display: block;
         }
-        
-        nav a:hover {
-            color: #334155;
-            background: #f1f5f9;
+
+        .theme-switch input { display: none; }
+
+        .slider-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            transition: 0.4s;
         }
-        
-        nav a::after {
+
+        .toggle-circle {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: #fdd835;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            box-shadow: 0 0 8px rgba(253, 216, 53, 0.4);
+            z-index: 2;
+        }
+
+        .toggle-circle::before {
             content: '';
             position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background: #6366f1;
-            transition: all 0.3s ease;
-            transform: translateX(-50%);
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background-color: #1a1a2e;
+            transform: translate(35%, -35%);
+            transition: all 0.5s ease;
         }
-        
-        nav a:hover::after {
-            width: calc(100% - 1rem);
+
+        .star { position: absolute; background: #fff; border-radius: 50%; transition: all 0.4s ease; }
+        .star-1 { top: 6px; left: 35px; width: 2px; height: 2px; }
+        .star-2 { top: 18px; left: 45px; width: 2px; height: 2px; }
+
+        .cloud { position: absolute; background: #fff; border-radius: 10px; opacity: 0; transition: all 0.4s ease; transform: translateY(10px); }
+        .cloud-1 { top: 14px; left: 8px; width: 14px; height: 5px; }
+
+        .theme-switch input:checked + .slider-container { background-color: #87CEEB; }
+        .theme-switch input:checked + .slider-container .toggle-circle {
+            left: 34px;
+            background-color: #ffeb3b;
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.9);
         }
-        
-        .container {
-            padding: 1rem;
-            max-width: 1200px;
-            margin: 0 auto;
+        .theme-switch input:checked + .slider-container .toggle-circle::before { transform: translate(100%, -100%); }
+        .theme-switch input:checked + .slider-container .star { opacity: 0; }
+        .theme-switch input:checked + .slider-container .cloud { opacity: 1; transform: translateY(0); }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        
-        .alert {
-            padding: 0.75rem;
-            border-radius: 0.375rem;
-            margin-bottom: 1rem;
+
+        .page-content {
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .nav-link {
+            position: relative;
+            color: var(--text-muted);
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover { color: var(--accent); }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0; height: 2px;
+            bottom: -4px; left: 0;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after { width: 100%; }
+
+        /* Pop-up Alert Styling */
+        .alert-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            border-radius: 16px;
+            padding: 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            animation: slideIn 0.3s ease-out;
-            font-size: 0.875rem;
-        }
-        
-        .alert-error {
-            background-color: #fee2e2;
-            color: #b91c1c;
-            border-left: 4px solid #ef4444;
-        }
-        
-        .alert-success {
-            background-color: #dcfce7;
-            color: #166534;
-            border-left: 4px solid #22c55e;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Avatar Styles */
-        .user-avatar {
-            margin-right: 0.5rem;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-        }
-        
-        .avatar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            text-transform: uppercase;
-            background-color: #e0e7ff;
-            color: #4f46e5;
-            border-radius: 9999px;
-            width: 2rem;
-            height: 2rem;
-            font-size: 0.875rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .avatar:hover {
-            transform: scale(1.1);
-            background-color: #4f46e5;
-            color: white;
-        }
-        
-        .username-text {
-            margin-left: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #374151;
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
-        /* Mobile-specific styles */
-        @media (max-width: 640px) {
-            nav {
-                padding: 0.5rem;
-            }
-            
-            .logo-icon {
-                height: 1.5rem;
-                width: 1.5rem;
-            }
-            
-            .logo-text {
-                font-size: 1rem;
-            }
-            
-            nav a {
-                font-size: 0.8rem;
-                padding: 0.2rem 0.4rem;
-            }
-            
-            .container {
-                padding: 0.75rem;
-            }
-            
-            .username-text {
-                display: none;
-            }
-            
-            .avatar {
-                width: 1.75rem;
-                height: 1.75rem;
-                font-size: 0.75rem;
-            }
+        .logo-gradient {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-
-        /* Right-aligned navigation items */
-        .nav-right {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-        }
+        
     </style>
 </head>
-<body>
-    <nav class="flex items-center">
-        <div class="flex items-center space-x-2 md:space-x-4">
-            <a href="{{ url_for('home') }}" class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="logo-icon h-6 w-6 md:h-8 md:w-8 text-indigo-600 mr-1 md:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span class="logo-text text-lg md:text-xl font-bold text-gray-800">Family Finance</span>
+<body class="antialiased">
+    <nav class="glass sticky top-0 z-50 px-4 md:px-8 py-4 mb-8">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="{{ url_for('home') }}" class="flex items-center space-x-3 group">
+                <div class="bg-indigo-600 p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 shadow-lg shadow-indigo-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <span class="text-xl font-extrabold tracking-tight logo-gradient">Family Finance</span>
             </a>
-        </div>
-        
-        <div class="nav-right">
-            {% if 'user_id' in session %}
-                <div class="user-avatar">
-                    <div class="avatar">
+
+            <div class="flex items-center space-x-4 md:space-x-8">
+                <div class="hidden md:flex items-center space-x-6">
+                    {% if 'user_id' in session %}
+                        <a href="{{ url_for('home') }}" class="nav-link">Home</a>
+                        <a href="{{ url_for('show_transactions') }}" class="nav-link">Transactions</a>
+                    {% endif %}
+                </div>
+
+                <label class="theme-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <div class="slider-container">
+                        <div class="toggle-circle"></div>
+                        <div class="star star-1"></div>
+                        <div class="star star-2"></div>
+                        <div class="cloud cloud-1"></div>
+                    </div>
+                </label>
+
+                {% if 'user_id' in session %}
+                <div class="flex items-center space-x-3 pl-4 border-l border-gray-200 dark:border-gray-700">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold shadow-inner">
                         {{ session.get('username_initial', 'U') }}
                     </div>
-                    <span class="username-text">
-                        {{ session.get('username', 'User') }}
-                    </span>
+                    <a href="{{ url_for('logout') }}" class="text-sm font-bold text-red-500 hover:text-red-600 transition">Logout</a>
                 </div>
-                <a href="{{ url_for('home') }}" class="hover:text-indigo-600">Home</a>
-                <a href="{{ url_for('show_transactions') }}" class="hover:text-indigo-600">Transactions</a>
-                <a href="{{ url_for('logout') }}" class="hover:text-indigo-600">Logout</a>
-            {% else %}
-                <a href="{{ url_for('login') }}" class="hover:text-indigo-600">Login</a>
-                <a href="{{ url_for('register') }}" class="hover:text-indigo-600">Register</a>
-            {% endif %}
+                {% else %}
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+                    <a href="{{ url_for('register') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full font-bold transition shadow-lg shadow-indigo-500/25">Join</a>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </nav>
 
-    <div class="container">
+    <div id="alert-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        <span>{{ message }}</span>
-                        <button onclick="this.parentElement.style.opacity='0'; setTimeout(()=>this.parentElement.remove(), 300)" 
-                                class="text-xl hover:text-gray-700 transition">×</button>
+                    <div class="alert-popup glass {% if category == 'success' %}border-green-500/50 text-green-600{% else %}border-red-500/50 text-red-600{% endif %}">
+                        <div class="flex items-center space-x-3">
+                            {% if category == 'success' %}
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            {% else %}
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            {% endif %}
+                            <span class="font-semibold">{{ message }}</span>
+                        </div>
+                        <button onclick="this.parentElement.remove()" class="ml-4 hover:opacity-70">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
-
-        {% block content %}{% endblock %}
     </div>
 
+    <main class="container mx-auto px-4 pb-20 page-content">
+        {% block content %}{% endblock %}
+    </main>
+
     <script>
-        // Add animation to nav links on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            const navLinks = document.querySelectorAll('nav a');
-            navLinks.forEach((link, index) => {
-                link.style.animation = `fadeIn 0.3s ease-out ${index * 0.1}s forwards`;
-                link.style.opacity = '0';
-            });
+        // Theme Management
+        const themeToggle = document.getElementById('theme-toggle');
+        const htmlElement = document.documentElement;
+
+        // Check for saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        htmlElement.setAttribute('data-theme', savedTheme);
+        themeToggle.checked = (savedTheme === 'light'); // Toggle logic is: checked = Day (Light)
+
+        themeToggle.addEventListener('change', () => {
+            const newTheme = themeToggle.checked ? 'light' : 'dark';
+            htmlElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
         });
+
+        // Auto-hide alerts after 5 seconds
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert-popup');
+            alerts.forEach(alert => {
+                alert.style.transition = 'opacity 0.5s ease';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500);
+            });
+        }, 5000);
     </script>
 </body>
 </html>
-
