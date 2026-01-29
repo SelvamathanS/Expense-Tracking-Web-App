@@ -1,6 +1,6 @@
 # Expense Tracking Web App
 
-A web application to manage personal finances by tracking expenses and visualizing spending. Users can add, edit, and view expense records via a simple UI.
+A web application to manage personal finances by tracking expenses and visualizing spending and balance. Users can add, edit, and view expense records via a UI with password protected.
 
 ## 🧠 Features
 
@@ -8,10 +8,11 @@ A web application to manage personal finances by tracking expenses and visualizi
 * View history of past expenses
 * Simple dashboard to summarize financial data
 * Lightweight web interface for quick expense tracking
+* Privacy for passwords(Hash passwords)
 
 ## 📦 Tech Stack
 
-* **Backend:** Python (Flask), Tidb cloud for database(online)
+* **Backend:** Python (Flask), neon db cloud for database(online)
 * **Frontend:** HTML, CSS, JavaScript
 * **Templates:** Jinja2 (Flask)
 * **Dependencies:** Listed in `requirements.txt`
