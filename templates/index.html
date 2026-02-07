@@ -88,7 +88,7 @@
                         <span class="font-bold uppercase tracking-widest text-sm">Available Balance</span>
                     </div>
                     <h2 class="text-6xl md:text-7xl font-black mb-6 tracking-tighter">
-                        ${{ "%.2f"|format(balance) }}
+                        ₹{{ "%.2f"|format(balance) }}
                     </h2>
                     <div class="flex space-x-4">
                         <div class="bg-white/20 backdrop-blur-md px-4 py-2 rounded-xl text-sm font-bold">
@@ -152,7 +152,7 @@
                             </div>
                         </div>
                         <span class="font-black text-lg {{ 'text-green-500' if t[2] == 'income' else '' }}" style="color: {{ 'inherit' if t[2] != 'income' else '' }};">
-                            {{ '+' if t[2] == 'income' else '-' }}${{ "%.2f"|format(t[1]) }}
+                            {{ '+' if t[2] == 'income' else '-' }}₹{{ "%.2f"|format(t[1]) }}
                         </span>
                     </div>
                     {% endfor %}
